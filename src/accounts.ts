@@ -2,7 +2,7 @@ import type { OpenClawConfig } from "openclaw/plugin-sdk";
 import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
-  normalizeResolvedSecretInputString,
+  normalizeSecretInputString,
 } from "openclaw/plugin-sdk";
 import type { NapCatAccountConfig, NapCatConfig, ResolvedNapCatAccount } from "./types.js";
 
@@ -60,7 +60,7 @@ export function resolveNapCatAccount(params: {
   const enabled = baseEnabled && accountEnabled;
 
   const httpApi = (config.httpApi ?? "").trim();
-  const accessToken = normalizeResolvedSecretInputString(config.accessToken) ?? "";
+  const accessToken = normalizeSecretInputString(config.accessToken) ?? "";
   const selfId = String(config.selfId ?? "").trim();
 
   return {
