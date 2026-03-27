@@ -1,4 +1,4 @@
-import type { BaseProbeResult } from "openclaw/plugin-sdk";
+import type { BaseProbeResult } from "openclaw/plugin-sdk/zalo";
 import { getLoginInfo } from "./api.js";
 import type { OneBotLoginInfo } from "./types.js";
 

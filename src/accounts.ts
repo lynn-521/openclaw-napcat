@@ -1,9 +1,6 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
-import {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  normalizeSecretInputString,
-} from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/zalo";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import { normalizeSecretInputString } from "openclaw/plugin-sdk/zalo";
 import type { NapCatAccountConfig, NapCatConfig, ResolvedNapCatAccount } from "./types.js";
 
 function getNapCatSection(cfg: OpenClawConfig): NapCatConfig | undefined {

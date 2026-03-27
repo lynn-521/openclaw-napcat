@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/zalo";
 import { resolveNapCatAccount } from "./accounts.js";
 import {
   sendPrivateMsg,

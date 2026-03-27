@@ -5,7 +5,7 @@ import { writeFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { WebSocketServer, WebSocket } from "ws";
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/zalo";
 import {
   createTypingCallbacks,
   createScopedPairingAccess,
@@ -17,7 +17,7 @@ import {
   resolveDefaultGroupPolicy,
   resolveInboundRouteEnvelopeBuilderWithRuntime,
   waitUntilAbort,
-} from "openclaw/plugin-sdk";
+} from "openclaw/plugin-sdk/zalo";
 import type { ResolvedNapCatAccount } from "./types.js";
 import type { OneBotMessageEvent, OneBotSegment } from "./types.js";
 import { sendGroupMsg, sendPrivateMsg, textSegment, replySegment, recordSegment, videoSegment, uploadGroupFile, uploadPrivateFile, getMsg } from "./api.js";

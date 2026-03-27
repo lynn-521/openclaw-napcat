@@ -1,32 +1,34 @@
 import {
   buildAccountScopedDmSecurityPolicy,
-  buildChannelSendResult,
-  buildBaseAccountStatusSnapshot,
-  buildTokenChannelStatusSummary,
-  DEFAULT_ACCOUNT_ID,
-  deleteAccountFromConfigSection,
-  setAccountEnabledInConfigSection,
-  applyAccountNameToChannelSection,
-  applySetupAccountConfigPatch,
-  migrateBaseNameToDefaultAccount,
-  chunkTextForOutbound,
-  formatAllowFromLowercase,
-  isNumericTargetId,
-  listDirectoryUserEntriesFromAllowFrom,
-  mapAllowFromEntries,
-  normalizeAccountId,
-  sendPayloadWithChunkedTextAndMedia,
   collectOpenProviderGroupPolicyWarnings,
   buildOpenGroupPolicyRestrictSendersWarning,
   buildOpenGroupPolicyWarning,
+  mapAllowFromEntries,
+} from "openclaw/plugin-sdk/compat";
+import {
+  applyAccountNameToChannelSection,
+  applySetupAccountConfigPatch,
+  buildBaseAccountStatusSnapshot,
+  buildTokenChannelStatusSummary,
+  buildChannelSendResult,
+  DEFAULT_ACCOUNT_ID,
+  deleteAccountFromConfigSection,
+  chunkTextForOutbound,
+  formatAllowFromLowercase,
+  migrateBaseNameToDefaultAccount,
+  listDirectoryUserEntriesFromAllowFrom,
+  normalizeAccountId,
+  isNumericTargetId,
   PAIRING_APPROVED_MESSAGE,
-} from "openclaw/plugin-sdk";
+  sendPayloadWithChunkedTextAndMedia,
+  setAccountEnabledInConfigSection,
+} from "openclaw/plugin-sdk/zalo";
 import type {
   ChannelAccountSnapshot,
   ChannelDock,
   ChannelPlugin,
   OpenClawConfig,
-} from "openclaw/plugin-sdk";
+} from "openclaw/plugin-sdk/zalo";
 // Inline — avoids SDK export resolution issues at runtime.
 function createAccountStatusSink(params: {
   accountId: string;

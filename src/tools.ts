@@ -1,7 +1,6 @@
-import type { ChannelAgentTool } from "openclaw/plugin-sdk";
+import type { ChannelAgentTool, OpenClawConfig } from "openclaw/plugin-sdk/zalo";
 import { callOneBotApi, sendGroupMsg, sendPrivateMsg, textSegment, imageSegment, recordSegment, videoSegment, uploadGroupFile, uploadPrivateFile } from "./api.js";
 import { resolveNapCatAccount } from "./accounts.js";
-import type { OpenClawConfig } from "openclaw/plugin-sdk";
 
 // ---------------------------------------------------------------------------
 // Helpers — plain JSON Schema objects (no typebox to avoid jiti dual-instance)

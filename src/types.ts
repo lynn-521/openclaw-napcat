@@ -1,4 +1,4 @@
-import type { SecretInput } from "openclaw/plugin-sdk";
+import type { SecretInput } from "openclaw/plugin-sdk/zalo";
 
 /** OneBot 11 message segment (array format). */
 export type OneBotSegment = {
