@@ -1,4 +1,4 @@
-# openclaw-napcat
+# @hyl_aa/napcat
 
 [English](./README_EN.md) | 中文
 
@@ -125,7 +125,7 @@ OpenClaw 的 QQ 消息通道插件，基于 [NapCat](https://github.com/NapNeko/
 **方式一：从 npm 安装（推荐）**
 
 ```bash
-openclaw plugins install @hyl_aa/openclaw-napcat
+openclaw plugins install @hyl_aa/napcat
 ```
 
 **方式二：手动克隆**

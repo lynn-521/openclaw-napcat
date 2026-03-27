@@ -1,4 +1,4 @@
-# openclaw-napcat
+# @hyl_aa/napcat
 
 English | [中文](./README.md)
 
@@ -125,7 +125,7 @@ Let your AI assistant fully control QQ interactions through natural language -- 
 **Option 1: Install from npm (recommended)**
 
 ```bash
-openclaw plugins install @hyl_aa/openclaw-napcat
+openclaw plugins install @hyl_aa/napcat
 ```
 
 **Option 2: Manual clone**
