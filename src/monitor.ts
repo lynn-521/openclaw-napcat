@@ -5,19 +5,67 @@ import { writeFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { WebSocketServer, WebSocket } from "ws";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/zalo";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
 import {
   createTypingCallbacks,
-  createScopedPairingAccess,
   createReplyPrefixOptions,
-  issuePairingChallenge,
+} from "openclaw/plugin-sdk/matrix";
+import {
   resolveDirectDmAuthorizationOutcome,
   resolveSenderCommandAuthorizationWithRuntime,
-  resolveOutboundMediaUrls,
-  resolveDefaultGroupPolicy,
-  resolveInboundRouteEnvelopeBuilderWithRuntime,
-  waitUntilAbort,
-} from "openclaw/plugin-sdk/zalo";
+} from "openclaw/plugin-sdk/command-auth";
+import { resolveOutboundMediaUrls } from "openclaw/plugin-sdk/reply-payload";
+import { resolveDefaultGroupPolicy } from "openclaw/plugin-sdk/config-runtime";
+import { resolveInboundRouteEnvelopeBuilderWithRuntime } from "openclaw/plugin-sdk/googlechat";
+import { waitUntilAbort } from "openclaw/plugin-sdk/channel-lifecycle";
+
+// createScopedPairingAccess is not available from a public SDK subpath;
+// inline a thin wrapper over core.channel.pairing methods.
+function createScopedPairingAccess(params: {
+  core: ReturnType<typeof getNapCatRuntime>;
+  channel: string;
+  accountId: string;
+}) {
+  const { core, channel, accountId } = params;
+  const pairing = (core.channel as Record<string, unknown>).pairing as {
+    readAllowFromStore: (p: { channel: string; accountId: string }) => Promise<string[]>;
+    upsertPairingRequest: (p: { id: string; channel: string; accountId: string; meta?: Record<string, string | undefined> }) => Promise<{ code: string; created: boolean }>;
+  };
+  return {
+    accountId,
+    readAllowFromStore: () => pairing.readAllowFromStore({ channel, accountId }),
+    readStoreForDmPolicy: (provider: string, acctId: string) =>
+      pairing.readAllowFromStore({ channel: provider, accountId: acctId }),
+    upsertPairingRequest: (input: { id: string; meta?: Record<string, string | undefined> }) =>
+      pairing.upsertPairingRequest({ ...input, channel, accountId }),
+  };
+}
+
+// issuePairingChallenge is not available from a public SDK subpath;
+// inline the standard create-if-missing + reply flow.
+async function issuePairingChallenge(params: {
+  channel: string;
+  senderId: string;
+  senderIdLine: string;
+  meta?: Record<string, string | undefined>;
+  upsertPairingRequest: (input: { id: string; meta?: Record<string, string | undefined> }) => Promise<{ code: string; created: boolean }>;
+  sendPairingReply: (text: string) => Promise<void>;
+  onCreated?: (params: { code: string }) => void;
+  onReplyError?: (err: unknown) => void;
+}): Promise<{ created: boolean; code?: string }> {
+  const { code, created } = await params.upsertPairingRequest({
+    id: params.senderId,
+    meta: params.meta,
+  });
+  if (created) params.onCreated?.({ code });
+  const replyText = `To pair, run this command in your terminal:\n\nopenclaw allow ${params.channel}:${params.senderId}\n\n${params.senderIdLine}\nPairing code: ${code}`;
+  try {
+    await params.sendPairingReply(replyText);
+  } catch (err) {
+    params.onReplyError?.(err);
+  }
+  return { created, code };
+}
 import type { ResolvedNapCatAccount } from "./types.js";
 import type { OneBotMessageEvent, OneBotSegment } from "./types.js";
 import { sendGroupMsg, sendPrivateMsg, textSegment, replySegment, recordSegment, videoSegment, uploadGroupFile, uploadPrivateFile, getMsg } from "./api.js";

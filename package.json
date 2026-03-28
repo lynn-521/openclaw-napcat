@@ -1,6 +1,6 @@
 {
   "name": "@hyl_aa/napcat",
-  "version": "1.2.0",
+  "version": "1.2.4",
   "description": "OpenClaw QQ channel plugin via NapCat (OneBot 11)",
   "type": "module",
   "license": "MIT",

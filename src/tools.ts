@@ -1,4 +1,5 @@
-import type { ChannelAgentTool, OpenClawConfig } from "openclaw/plugin-sdk/zalo";
+import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
+import type { ChannelAgentTool } from "openclaw/plugin-sdk/channel-contract";
 import { callOneBotApi, sendGroupMsg, sendPrivateMsg, textSegment, imageSegment, recordSegment, videoSegment, uploadGroupFile, uploadPrivateFile } from "./api.js";
 import { resolveNapCatAccount } from "./accounts.js";
 

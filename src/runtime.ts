@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "openclaw/plugin-sdk/zalo";
+import type { PluginRuntime } from "openclaw/plugin-sdk/core";
 
 // Inline runtime store to avoid dependency on createPluginRuntimeStore
 // which may not be exported in older OpenClaw versions.

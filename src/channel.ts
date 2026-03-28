@@ -1,42 +1,43 @@
-import {
-  buildAccountScopedDmSecurityPolicy,
-  collectOpenProviderGroupPolicyWarnings,
-  buildOpenGroupPolicyRestrictSendersWarning,
-  buildOpenGroupPolicyWarning,
-  mapAllowFromEntries,
-} from "openclaw/plugin-sdk/compat";
-import {
-  applyAccountNameToChannelSection,
-  applySetupAccountConfigPatch,
-  buildBaseAccountStatusSnapshot,
-  buildTokenChannelStatusSummary,
-  buildChannelSendResult,
-  DEFAULT_ACCOUNT_ID,
-  deleteAccountFromConfigSection,
-  chunkTextForOutbound,
-  formatAllowFromLowercase,
-  migrateBaseNameToDefaultAccount,
-  listDirectoryUserEntriesFromAllowFrom,
-  normalizeAccountId,
-  isNumericTargetId,
-  PAIRING_APPROVED_MESSAGE,
-  sendPayloadWithChunkedTextAndMedia,
-  setAccountEnabledInConfigSection,
-} from "openclaw/plugin-sdk/zalo";
 import type {
   ChannelAccountSnapshot,
-  ChannelDock,
   ChannelPlugin,
   OpenClawConfig,
-} from "openclaw/plugin-sdk/zalo";
-// Inline — avoids SDK export resolution issues at runtime.
-function createAccountStatusSink(params: {
-  accountId: string;
-  setStatus: (next: Record<string, unknown>) => void;
-}): (patch: Record<string, unknown>) => void {
-  return (patch) => {
-    params.setStatus({ accountId: params.accountId, ...patch });
-  };
+} from "openclaw/plugin-sdk/core";
+import {
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  applyAccountNameToChannelSection,
+  deleteAccountFromConfigSection,
+  migrateBaseNameToDefaultAccount,
+  setAccountEnabledInConfigSection,
+} from "openclaw/plugin-sdk/core";
+import { PAIRING_APPROVED_MESSAGE } from "openclaw/plugin-sdk/channel-status";
+import { applySetupAccountConfigPatch } from "openclaw/plugin-sdk/setup";
+import { buildAccountScopedDmSecurityPolicy, collectOpenProviderGroupPolicyWarnings, buildOpenGroupPolicyRestrictSendersWarning, buildOpenGroupPolicyWarning } from "openclaw/plugin-sdk/channel-policy";
+import { buildBaseAccountStatusSnapshot } from "openclaw/plugin-sdk/status-helpers";
+import { buildTokenChannelStatusSummary } from "openclaw/plugin-sdk/channel-status";
+import { buildChannelSendResult } from "openclaw/plugin-sdk/channel-send-result";
+import { createAccountStatusSink } from "openclaw/plugin-sdk/channel-lifecycle";
+import { mapAllowFromEntries } from "openclaw/plugin-sdk/channel-config-helpers";
+import { formatAllowFromLowercase } from "openclaw/plugin-sdk/allow-from";
+import { isNumericTargetId, sendPayloadWithChunkedTextAndMedia } from "openclaw/plugin-sdk/reply-payload";
+import { listDirectoryUserEntriesFromAllowFrom } from "openclaw/plugin-sdk/directory-runtime";
+
+// chunkTextForOutbound is not available from a dedicated public subpath;
+// inline a minimal implementation (split text at limit boundaries).
+function chunkTextForOutbound(text: string, limit: number): string[] {
+  if (!text || text.length <= limit) return text ? [text] : [];
+  const chunks: string[] = [];
+  let remaining = text;
+  while (remaining.length > 0) {
+    if (remaining.length <= limit) { chunks.push(remaining); break; }
+    let splitAt = remaining.lastIndexOf("\n", limit);
+    if (splitAt <= 0) splitAt = remaining.lastIndexOf(" ", limit);
+    if (splitAt <= 0) splitAt = limit;
+    chunks.push(remaining.slice(0, splitAt));
+    remaining = remaining.slice(splitAt).replace(/^\n/, "");
+  }
+  return chunks;
 }
 
 import {
@@ -70,7 +71,7 @@ function normalizeNapCatMessagingTarget(raw: string): string | undefined {
   return trimmed.replace(/^(napcat|qq|onebot):/i, "");
 }
 
-export const napCatDock: ChannelDock = {
+export const napCatDock = {
   id: "napcat",
   capabilities: {
     chatTypes: ["direct", "group"],
