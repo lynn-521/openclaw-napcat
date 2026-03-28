@@ -116,8 +116,8 @@ Let your AI assistant fully control QQ interactions through natural language -- 
 
 ## Prerequisites
 
-- [OpenClaw](https://github.com/openclaw/openclaw) installed and running
-- [NapCat](https://github.com/NapNeko/NapCatQQ) running with HTTP API enabled
+- [OpenClaw](https://github.com/openclaw/openclaw) >= 2026.3.14
+- [NapCat](https://github.com/NapNeko/NapCatQQ) running with HTTP API and reverse WebSocket enabled
 - Node.js 22+
 
 ## Installation
@@ -136,7 +136,31 @@ git clone https://github.com/Aliang1337/openclaw-napcat.git napcat
 cd napcat && npm install --omit=dev
 ```
 
+Restart OpenClaw (`openclaw restart`) after installation.
+
 ## Configuration
+
+### NapCat Side
+
+Enable the following in your NapCat configuration:
+
+1. **HTTP API** -- for sending messages (default port `3000`)
+2. **Reverse WebSocket** -- for receiving messages, connecting to the WS port assigned by OpenClaw (starting from `18800`)
+
+NapCat reverse WS config example:
+
+```json
+{
+  "reverseWs": {
+    "enable": true,
+    "urls": ["ws://127.0.0.1:18800"]
+  }
+}
+```
+
+> For multi-account setups, ports increment sequentially (18800, 18801, 18802...).
+
+### OpenClaw Side
 
 Add to your OpenClaw config (`openclaw config edit`):
 
@@ -156,17 +180,47 @@ Add to your OpenClaw config (`openclaw config edit`):
 }
 ```
 
+### Multi-Account Configuration
+
+```json
+{
+  "channels": {
+    "napcat": {
+      "defaultAccount": "bot1",
+      "accounts": {
+        "bot1": {
+          "name": "Main Bot",
+          "httpApi": "http://127.0.0.1:3000",
+          "accessToken": "token1",
+          "selfId": "111111111",
+          "allowFrom": ["friend_qq_number"]
+        },
+        "bot2": {
+          "name": "Secondary Bot",
+          "httpApi": "http://127.0.0.1:3001",
+          "selfId": "222222222",
+          "allowFrom": ["friend_qq_number"]
+        }
+      }
+    }
+  }
+}
+```
+
 ### Config Fields
 
-| Field | Description |
-|-------|-------------|
-| `httpApi` | NapCat OneBot 11 HTTP API address |
-| `accessToken` | API auth token (optional) |
-| `selfId` | Bot's own QQ number (for @mention detection) |
-| `dmPolicy` | DM policy: `allowlist` / `pairing` / `open` / `disabled` |
-| `allowFrom` | Allowed QQ numbers for DM |
-| `groupPolicy` | Group policy: `allowlist` / `open` / `disabled` |
-| `groupAllowFrom` | Allowed QQ numbers in groups |
+| Field | Description | Default |
+|-------|-------------|---------|
+| `httpApi` | NapCat OneBot 11 HTTP API address | - |
+| `accessToken` | API auth token (optional) | - |
+| `selfId` | Bot's own QQ number (for @mention detection) | - |
+| `dmPolicy` | DM policy: `allowlist` / `pairing` / `open` / `disabled` | `allowlist` |
+| `allowFrom` | Allowed QQ numbers for DM | `[]` |
+| `groupPolicy` | Group policy: `allowlist` / `open` / `disabled` | `open` |
+| `groupAllowFrom` | Allowed QQ numbers in groups (falls back to `allowFrom`) | `[]` |
+| `mediaMaxMb` | Max inbound media file size in MB | `5` |
+| `responsePrefix` | Prefix for AI reply messages (optional) | - |
+| `enabled` | Enable/disable this account | `true` |
 
 **Important:** Set `tools.profile` to `"full"` in your OpenClaw config, otherwise `qq_*` tools will be filtered out by the default `"coding"` profile.
 

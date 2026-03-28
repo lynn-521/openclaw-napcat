@@ -116,8 +116,8 @@ OpenClaw 的 QQ 消息通道插件，基于 [NapCat](https://github.com/NapNeko/
 
 ## 前置要求
 
-- 已安装并运行 [OpenClaw](https://github.com/openclaw/openclaw)
-- 已运行 [NapCat](https://github.com/NapNeko/NapCatQQ) 并开启 HTTP API
+- [OpenClaw](https://github.com/openclaw/openclaw) >= 2026.3.14
+- [NapCat](https://github.com/NapNeko/NapCatQQ) 已运行并开启 HTTP API 和反向 WebSocket
 - Node.js 22+
 
 ## 安装
@@ -136,7 +136,31 @@ git clone https://github.com/Aliang1337/openclaw-napcat.git napcat
 cd napcat && npm install --omit=dev
 ```
 
+安装后重启 OpenClaw（`openclaw restart`）使插件生效。
+
 ## 配置
+
+### NapCat 端配置
+
+在 NapCat 的配置中，需要开启以下功能：
+
+1. **HTTP API** — 用于插件主动发送消息，默认端口 `3000`
+2. **反向 WebSocket** — 用于接收消息，需要连接到 OpenClaw 分配的 WS 端口（默认从 `18800` 开始）
+
+NapCat 反向 WS 配置示例：
+
+```json
+{
+  "reverseWs": {
+    "enable": true,
+    "urls": ["ws://127.0.0.1:18800"]
+  }
+}
+```
+
+> 如果配置了多个账号，端口会依次递增（18800、18801、18802...）。
+
+### OpenClaw 端配置
 
 在 OpenClaw 配置中添加（`openclaw config edit`）：
 
@@ -156,17 +180,47 @@ cd napcat && npm install --omit=dev
 }
 ```
 
+### 多账号配置
+
+```json
+{
+  "channels": {
+    "napcat": {
+      "defaultAccount": "bot1",
+      "accounts": {
+        "bot1": {
+          "name": "主号",
+          "httpApi": "http://127.0.0.1:3000",
+          "accessToken": "token1",
+          "selfId": "111111111",
+          "allowFrom": ["好友QQ号"]
+        },
+        "bot2": {
+          "name": "小号",
+          "httpApi": "http://127.0.0.1:3001",
+          "selfId": "222222222",
+          "allowFrom": ["好友QQ号"]
+        }
+      }
+    }
+  }
+}
+```
+
 ### 配置字段说明
 
-| 字段 | 说明 |
-|------|------|
-| `httpApi` | NapCat OneBot 11 HTTP API 地址 |
-| `accessToken` | API 鉴权 token（可选） |
-| `selfId` | 机器人自身 QQ 号（用于 @机器人检测） |
-| `dmPolicy` | 私聊策略：`allowlist` / `pairing` / `open` / `disabled` |
-| `allowFrom` | 允许私聊的 QQ 号列表 |
-| `groupPolicy` | 群聊策略：`allowlist` / `open` / `disabled` |
-| `groupAllowFrom` | 允许在群聊中触发的 QQ 号列表 |
+| 字段 | 说明 | 默认值 |
+|------|------|--------|
+| `httpApi` | NapCat OneBot 11 HTTP API 地址 | - |
+| `accessToken` | API 鉴权 token（可选） | - |
+| `selfId` | 机器人自身 QQ 号（用于 @机器人检测） | - |
+| `dmPolicy` | 私聊策略：`allowlist` / `pairing` / `open` / `disabled` | `allowlist` |
+| `allowFrom` | 允许私聊的 QQ 号列表 | `[]` |
+| `groupPolicy` | 群聊策略：`allowlist` / `open` / `disabled` | `open` |
+| `groupAllowFrom` | 允许在群聊中触发的 QQ 号列表（空则使用 `allowFrom`） | `[]` |
+| `mediaMaxMb` | 接收媒体文件的最大尺寸（MB） | `5` |
+| `responsePrefix` | AI 回复消息前缀（可选） | - |
+| `enabled` | 启用/禁用此账号 | `true` |
 
 **重要：** 需要在 OpenClaw 配置中将 `tools.profile` 设置为 `"full"`，否则 `qq_*` 工具会被默认的 `"coding"` profile 过滤掉。
 
