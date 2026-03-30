@@ -6,28 +6,28 @@
 import type { NapCatAccountConfig } from "../types.js";
 
 /** Tools that require admin permission. */
-export const HIGH_RISK_TOOLS = new Set([
-  "qq_mute_group_member",
-  "qq_kick_group_member",
-  "qq_set_group_admin",
-  "qq_set_group_name",
-  "qq_set_group_whole_ban",
-  "qq_set_group_leave",
-  "qq_send_group_notice",
-  "qq_delete_group_notice",
-  "qq_set_essence_msg",
-  "qq_delete_essence_msg",
-  "qq_handle_friend_request",
-  "qq_handle_group_request",
-  "qq_delete_friend",
-  "qq_set_friend_remark",
-] as const);
+export const HIGH_RISK_TOOLS: Record<string, true> = {
+  qq_mute_group_member: true,
+  qq_kick_group_member: true,
+  qq_set_group_admin: true,
+  qq_set_group_name: true,
+  qq_set_group_whole_ban: true,
+  qq_set_group_leave: true,
+  qq_send_group_notice: true,
+  qq_delete_group_notice: true,
+  qq_set_essence_msg: true,
+  qq_delete_essence_msg: true,
+  qq_handle_friend_request: true,
+  qq_handle_group_request: true,
+  qq_delete_friend: true,
+  qq_set_friend_remark: true,
+};
 
-export type HighRiskToolName = (typeof HIGH_RISK_TOOLS)[number];
+export type HighRiskToolName = keyof typeof HIGH_RISK_TOOLS;
 
 /** Check if a tool name is a high-risk tool. */
 export function isHighRiskTool(name: string): name is HighRiskToolName {
-  return (HIGH_RISK_TOOLS as ReadonlySet<string>).has(name);
+  return name in HIGH_RISK_TOOLS;
 }
 
 export class AdminGuard {
