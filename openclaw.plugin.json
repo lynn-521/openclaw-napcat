@@ -1,0 +1,10 @@
+{
+  "id": "napcat",
+  "version": "1.3.0",
+  "channels": ["napcat"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}
