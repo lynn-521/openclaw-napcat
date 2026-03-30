@@ -1,0 +1,49 @@
+{
+  "name": "@lynn-521/napcat",
+  "version": "1.3.0",
+  "description": "OpenClaw QQ channel plugin via NapCat (OneBot 11) — 增强版：安全加固 + 长消息策略 + 关键字触发 + 群事件钩子",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lynn-521/openclaw-napcat.git"
+  },
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "qq",
+    "napcat",
+    "onebot",
+    "chatbot"
+  ],
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "peerDependencies": {
+    "openclaw": "*"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "napcat",
+      "label": "QQ (NapCat)",
+      "selectionLabel": "QQ via NapCat (OneBot 11)",
+      "docsPath": "/channels/napcat",
+      "docsLabel": "napcat",
+      "blurb": "QQ messaging via NapCat OneBot 11 reverse WebSocket.",
+      "aliases": [
+        "qq",
+        "onebot"
+      ],
+      "order": 90,
+      "quickstartAllowFrom": true
+    },
+    "install": {
+      "npmSpec": "@lynn-521/napcat",
+      "localPath": "extensions/napcat",
+      "defaultChoice": "npm"
+    }
+  }
+}
