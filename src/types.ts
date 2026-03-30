@@ -140,6 +140,27 @@ export type NapCatAccountConfig = {
     /** Action script path to execute when triggered. */
     action?: string;
   };
+  /** Group join/leave event hooks configuration. */
+  groupEvents?: {
+    /** Join group event configuration. */
+    onJoin?: {
+      /** Enable join group hook. */
+      enabled?: boolean;
+      /** Welcome message template, supports {nickname} and {user_id} placeholders. */
+      welcomeMessage?: string;
+      /** Whether to @mention the new member. */
+      atNewMember?: boolean;
+      /** Only trigger when set by group owner/admin (future use). */
+      adminOnly?: boolean;
+    };
+    /** Leave group event configuration. */
+    onLeave?: {
+      /** Enable leave group hook. */
+      enabled?: boolean;
+      /** Farewell message template (optional). */
+      farewellMessage?: string;
+    };
+  };
 };
 
 export type NapCatConfig = {

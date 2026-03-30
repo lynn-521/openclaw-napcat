@@ -10,6 +10,7 @@ import { resolveDefaultGroupPolicy } from "openclaw/plugin-sdk/config-runtime";
 import { resolveInboundRouteEnvelopeBuilderWithRuntime } from "openclaw/plugin-sdk/googlechat";
 import { waitUntilAbort } from "openclaw/plugin-sdk/channel-lifecycle";
 import { issuePairingChallenge } from "openclaw/plugin-sdk/conversation-runtime";
+import { checkTrigger } from "./features/keyword-matcher.js";
 
 // Inline stubs for internal SDK functions not available in public API
 // These are minimal implementations for compatibility
@@ -47,7 +48,8 @@ function createReplyPrefixOptions(params: { cfg: OpenClawConfig; agentId?: strin
   };
 }
 import type { ResolvedNapCatAccount } from "./types.js";
-import type { OneBotMessageEvent, OneBotSegment } from "./types.js";
+import type { OneBotMessageEvent, OneBotSegment, OneBotNoticeEvent } from "./types.js";
+import { handleGroupNoticeEvent } from "./features/group-hooks.js";
 import { sendGroupMsg, sendPrivateMsg, textSegment, replySegment, recordSegment, videoSegment, uploadGroupFile, uploadPrivateFile, getMsg } from "./api.js";
 import { getNapCatRuntime, setCurrentSenderContext, clearCurrentSenderContext } from "./runtime.js";
 import { RateLimiter } from "./security/rate-limiter.js";
@@ -279,6 +281,31 @@ export async function monitorNapCatProvider(options: NapCatMonitorOptions): Prom
 
       // Ignore meta events (heartbeat, lifecycle)
       if (data.post_type === "meta_event") return;
+
+      // Handle notice events (group member join/leave)
+      if (data.post_type === "notice") {
+        const noticeEvent = data as unknown as OneBotNoticeEvent;
+        if (noticeEvent.notice_type === "group_increase" || noticeEvent.notice_type === "group_decrease") {
+          const sendFn = async (target: string, text: string) => {
+            const numericId = Number(target);
+            if (isNapCatWsConnected()) {
+              try {
+                await wsSendGroupMsg(numericId, [textSegment(text)]);
+                statusSink?.({ lastOutboundAt: Date.now() });
+                return;
+              } catch (wsErr) {
+                runtime.log?.(`[${account.accountId}] WS group event send failed, falling back to HTTP: ${String(wsErr)}`);
+              }
+            }
+            await sendGroupMsg(account.httpApi, numericId, [textSegment(text)], account.accessToken);
+            statusSink?.({ lastOutboundAt: Date.now() });
+          };
+          handleGroupNoticeEvent(noticeEvent, account.config, sendFn).catch((err) => {
+            runtime.error?.(`[${account.accountId}] NapCat group notice processing error: ${String(err)}`);
+          });
+        }
+        return;
+      }
 
       // Only handle message events
       if (data.post_type !== "message") return;
@@ -595,6 +622,70 @@ async function processMessage(
         // Ignore send failures for rate limit notifications
       }
       return;
+    }
+  }
+
+  // Keyword trigger check — intercept matching messages before AI processing
+  const kt = account.config.keywordTriggers;
+  if (kt?.enabled) {
+    const keywords = kt.keywords ?? [];
+    // In groups, apply requireAt filter
+    if (isGroup && kt.requireAt && !hasBotMention(event.message, selfId)) {
+      // not @mentioned — skip keyword trigger
+    } else if (keywords.length > 0) {
+      const triggerResult = checkTrigger(rawBody || text, account.config);
+      if (triggerResult.triggered) {
+        runtime.log?.(`[${account.accountId}] Keyword triggered match=${kt.mode} keywords=${JSON.stringify(keywords)}`);
+        if (triggerResult.response) {
+          // Send fixed response and stop here
+          try {
+            const numericChatId = Number(chatId);
+            const replyText = triggerResult.response;
+            if (isNapCatWsConnected()) {
+              try {
+                if (isGroup) {
+                  await wsSendGroupMsg(numericChatId, [replySegment(event.message_id), textSegment(replyText)]);
+                } else {
+                  await wsSendPrivateMsg(Number(senderId), [textSegment(replyText)]);
+                }
+                statusSink?.({ lastOutboundAt: Date.now() });
+              } catch {
+                // fallback below
+              }
+            }
+            if (!isNapCatWsConnected() || true) {
+              if (isGroup) {
+                await sendGroupMsg(account.httpApi, numericChatId, [replySegment(event.message_id), textSegment(replyText)], account.accessToken);
+              } else {
+                await sendPrivateMsg(account.httpApi, Number(senderId), [textSegment(replyText)], account.accessToken);
+              }
+              statusSink?.({ lastOutboundAt: Date.now() });
+            }
+          } catch (err) {
+            runtime.error?.(`[${account.accountId}] Keyword trigger response send failed: ${String(err)}`);
+          }
+          return;
+        }
+        if (triggerResult.action) {
+          // Execute action script asynchronously, then continue to AI
+          const actionPath = triggerResult.action;
+          runtime.log?.(`[${account.accountId}] Executing keyword action: ${actionPath}`);
+          execFile(
+            "node",
+            [actionPath, rawBody || text, senderId, chatId, String(isGroup)],
+            { timeout: 30_000 },
+            (err, stdout, stderr) => {
+              if (err) {
+                runtime.error?.(`[${account.accountId}] Keyword action error: ${String(err)}`);
+              } else {
+                runtime.log?.(`[${account.accountId}] Keyword action output: ${stdout.slice(0, 200)}`);
+              }
+            },
+          );
+          // Continue to AI even when action is set (action is fire-and-forget)
+        }
+        // No response and no action: fall through to AI processing
+      }
     }
   }
 

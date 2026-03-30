@@ -21,7 +21,9 @@ OpenClaw 的 QQ 消息通道插件，基于 [NapCat](https://github.com/NapNeko/
 - **多账号支持** —— 支持配置多个 NapCat 机器人账号
 - **速率限制** —— 三级限流：分钟/小时/天，防止恶意刷消息
 - **管理员权限守卫** —— 高危操作需要管理员授权，非管理员无法执行
+- **关键字触发引擎** —— 支持精确/模糊/正则/组合匹配，命中后发送固定回复或执行脚本
 - **白名单/黑名单访问控制** —— 精细控制哪些用户和群可以与机器人交互，支持 allowlist 和 blocklist 两种模式
+- **长消息智能处理（三种模式）** —— AI 回复超过阈值字符时自动处理：normal=分片流式发送，og_image=渲染为图片，forward=合并转发
 
 ## Agent 工具列表
 
@@ -168,6 +170,13 @@ cd napcat && npm install --omit=dev
         "maxPerDay": 3000
       },
       "admins": ["管理员QQ号"],
+      "keywordTriggers": {
+        "enabled": true,
+        "mode": "contains",
+        "keywords": ["帮助", "help"],
+        "requireAt": false,
+        "response": "你好！有什么可以帮你的吗？"
+      },
       "whitelist": {
         "enabled": false,
         "mode": "blocklist",
@@ -206,6 +215,12 @@ cd napcat && npm install --omit=dev
 | `rateLimit.maxPerHour` | 每小时最大消息数（默认 500） |
 | `rateLimit.maxPerDay` | 每天最大消息数（默认 3000） |
 | `admins` | 管理员 QQ 号列表，可执行所有操作（包括高危操作） |
+| `keywordTriggers.enabled` | 是否启用关键字触发引擎 |
+| `keywordTriggers.mode` | 触发模式：`contains`（包含）/ `exact`（精确）/ `regex`（正则）/ `any`（所有关键词都包含） |
+| `keywordTriggers.keywords` | 触发关键词列表 |
+| `keywordTriggers.requireAt` | 是否需要 @机器人 才触发 |
+| `keywordTriggers.response` | 命中后的固定回复（不填则走 AI 处理） |
+| `keywordTriggers.action` | 命中后执行的脚本路径 |
 | `whitelist.enabled` | 是否启用白名单/黑名单访问控制（默认 false） |
 | `whitelist.mode` | 模式：`allowlist`=仅允许名单，`blocklist`=允许所有但排除黑名单（默认 blocklist） |
 | `whitelist.allowUsers` | allowlist 模式下允许的私聊用户 QQ 号列表 |
@@ -245,6 +260,8 @@ cd napcat && npm install --omit=dev
     ├── api.ts               # OneBot 11 HTTP API 客户端
     ├── channel.ts           # Channel 插件与 Dock 定义
     ├── config-schema.ts     # 配置 JSON Schema + UI 提示
+    ├── features/            # 功能模块
+    │   └── keyword-matcher.ts  # 关键字触发引擎
     ├── monitor.ts           # WebSocket 消息监听 + STT + 速率限制
     ├── probe.ts             # 连接探测 / 健康检查
     ├── runtime.ts           # 运行时上下文 + 发送者上下文管理
