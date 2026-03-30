@@ -21,6 +21,7 @@ OpenClaw 的 QQ 消息通道插件，基于 [NapCat](https://github.com/NapNeko/
 - **多账号支持** —— 支持配置多个 NapCat 机器人账号
 - **速率限制** —— 三级限流：分钟/小时/天，防止恶意刷消息
 - **管理员权限守卫** —— 高危操作需要管理员授权，非管理员无法执行
+- **入退群事件钩子** —— 新成员入群自动发送欢迎消息，成员退群自动发送告别消息
 - **关键字触发引擎** —— 支持精确/模糊/正则/组合匹配，命中后发送固定回复或执行脚本
 - **白名单/黑名单访问控制** —— 精细控制哪些用户和群可以与机器人交互，支持 allowlist 和 blocklist 两种模式
 - **长消息智能处理（三种模式）** —— AI 回复超过阈值字符时自动处理：normal=分片流式发送，og_image=渲染为图片，forward=合并转发
@@ -170,6 +171,17 @@ cd napcat && npm install --omit=dev
         "maxPerDay": 3000
       },
       "admins": ["管理员QQ号"],
+      "groupEvents": {
+        "onJoin": {
+          "enabled": true,
+          "welcomeMessage": "欢迎 {nickname} 加入本群！",
+          "atNewMember": true
+        },
+        "onLeave": {
+          "enabled": false,
+          "farewellMessage": "{user_id} 离开了群聊"
+        }
+      },
       "keywordTriggers": {
         "enabled": true,
         "mode": "contains",
@@ -184,6 +196,18 @@ cd napcat && npm install --omit=dev
         "allowGroups": [],
         "blockUsers": [],
         "blockGroups": []
+      },
+      "longMessage": {
+        "threshold": 300,
+        "mode": "normal",
+        "normal": {
+          "flushIntervalMs": 1200,
+          "flushChars": 160
+        },
+        "ogImage": {
+          "renderTheme": "default",
+          "fontSize": 14
+        }
       }
     }
   }
@@ -215,6 +239,12 @@ cd napcat && npm install --omit=dev
 | `rateLimit.maxPerHour` | 每小时最大消息数（默认 500） |
 | `rateLimit.maxPerDay` | 每天最大消息数（默认 3000） |
 | `admins` | 管理员 QQ 号列表，可执行所有操作（包括高危操作） |
+| `groupEvents.onJoin.enabled` | 是否启用入群欢迎消息（默认 false） |
+| `groupEvents.onJoin.welcomeMessage` | 欢迎消息模板，支持 {nickname}、{user_id} 占位符 |
+| `groupEvents.onJoin.atNewMember` | 是否 @新成员（默认 true） |
+| `groupEvents.onJoin.adminOnly` | 是否仅管理员可触发（默认 false） |
+| `groupEvents.onLeave.enabled` | 是否启用退群告别消息（默认 false） |
+| `groupEvents.onLeave.farewellMessage` | 告别消息模板，支持 {user_id} 占位符 |
 | `keywordTriggers.enabled` | 是否启用关键字触发引擎 |
 | `keywordTriggers.mode` | 触发模式：`contains`（包含）/ `exact`（精确）/ `regex`（正则）/ `any`（所有关键词都包含） |
 | `keywordTriggers.keywords` | 触发关键词列表 |
@@ -227,8 +257,28 @@ cd napcat && npm install --omit=dev
 | `whitelist.allowGroups` | allowlist 模式下允许的群 ID 列表 |
 | `whitelist.blockUsers` | blocklist 模式下禁止的私聊用户 QQ 号列表 |
 | `whitelist.blockGroups` | blocklist 模式下禁止的群 ID 列表 |
+| `longMessage.threshold` | 触发长消息处理的字符数阈值（默认 300） |
+| `longMessage.mode` | 长消息处理模式：`normal`（分片发送）/ `og_image`（渲染图片）/ `forward`（合并转发） |
+| `longMessage.normal.flushIntervalMs` | normal 模式每段发送间隔（毫秒，默认 1200） |
+| `longMessage.normal.flushChars` | normal 模式每段字符数（默认 160） |
+| `longMessage.ogImage.renderTheme` | og_image 模式渲染主题：`default`（白色）/ `dark`（深色） |
+| `longMessage.ogImage.fontSize` | og_image 模式字体大小（px，默认 14） |
 
 **重要：** 需要在 OpenClaw 配置中将 `tools.profile` 设置为 `"full"`，否则 `qq_*` 工具会被默认的 `"coding"` profile 过滤掉。
+
+### 长消息处理
+
+当 AI 回复超过 `longMessage.threshold` 字符时，插件自动选择以下模式之一处理：
+
+| 模式 | 说明 | 适用场景 |
+|------|------|----------|
+| `normal`（默认） | 将文本分片，每片 `flushChars` 字，片之间等待 `flushIntervalMs`，自动带上 reply 段保持上下文 | 大多数场景，避免刷屏 |
+| `og_image` | 将文本渲染为 HTML 再转为 PNG 图片发送，保持格式 | 代码、表格等需要保留格式的长内容 |
+| `forward` | 使用 QQ 合并转发消息发送，分多个节点 | 超长文本，保留原始分段 |
+
+- `normal` 模式：分片发送时每片自动标记 `[1/N]` 序号；所有分片都会带上 reply 段，指向触发消息，保持对话上下文
+- `og_image` 模式：需要 `@napi-rs/canvas` 支持；渲染失败时自动降级为 `normal` 模式
+- `forward` 模式：通过 `send_group_forward_msg` / `send_private_forward_msg` API 发送合并转发消息
 
 ## 使用示例
 
@@ -261,6 +311,7 @@ cd napcat && npm install --omit=dev
     ├── channel.ts           # Channel 插件与 Dock 定义
     ├── config-schema.ts     # 配置 JSON Schema + UI 提示
     ├── features/            # 功能模块
+    │   ├── group-hooks.ts   # 入退群事件钩子
     │   └── keyword-matcher.ts  # 关键字触发引擎
     ├── monitor.ts           # WebSocket 消息监听 + STT + 速率限制
     ├── probe.ts             # 连接探测 / 健康检查
