@@ -21,6 +21,7 @@ OpenClaw 的 QQ 消息通道插件，基于 [NapCat](https://github.com/NapNeko/
 - **多账号支持** —— 支持配置多个 NapCat 机器人账号
 - **速率限制** —— 三级限流：分钟/小时/天，防止恶意刷消息
 - **管理员权限守卫** —— 高危操作需要管理员授权，非管理员无法执行
+- **白名单/黑名单访问控制** —— 精细控制哪些用户和群可以与机器人交互，支持 allowlist 和 blocklist 两种模式
 
 ## Agent 工具列表
 
@@ -166,7 +167,15 @@ cd napcat && npm install --omit=dev
         "maxPerHour": 500,
         "maxPerDay": 3000
       },
-      "admins": ["管理员QQ号"]
+      "admins": ["管理员QQ号"],
+      "whitelist": {
+        "enabled": false,
+        "mode": "blocklist",
+        "allowUsers": [],
+        "allowGroups": [],
+        "blockUsers": [],
+        "blockGroups": []
+      }
     }
   }
 }
@@ -197,6 +206,12 @@ cd napcat && npm install --omit=dev
 | `rateLimit.maxPerHour` | 每小时最大消息数（默认 500） |
 | `rateLimit.maxPerDay` | 每天最大消息数（默认 3000） |
 | `admins` | 管理员 QQ 号列表，可执行所有操作（包括高危操作） |
+| `whitelist.enabled` | 是否启用白名单/黑名单访问控制（默认 false） |
+| `whitelist.mode` | 模式：`allowlist`=仅允许名单，`blocklist`=允许所有但排除黑名单（默认 blocklist） |
+| `whitelist.allowUsers` | allowlist 模式下允许的私聊用户 QQ 号列表 |
+| `whitelist.allowGroups` | allowlist 模式下允许的群 ID 列表 |
+| `whitelist.blockUsers` | blocklist 模式下禁止的私聊用户 QQ 号列表 |
+| `whitelist.blockGroups` | blocklist 模式下禁止的群 ID 列表 |
 
 **重要：** 需要在 OpenClaw 配置中将 `tools.profile` 设置为 `"full"`，否则 `qq_*` 工具会被默认的 `"coding"` profile 过滤掉。
 
@@ -234,6 +249,7 @@ cd napcat && npm install --omit=dev
     ├── probe.ts             # 连接探测 / 健康检查
     ├── runtime.ts           # 运行时上下文 + 发送者上下文管理
     ├── security/            # 安全模块
+    │   ├── access-control.ts  # 白名单/黑名单访问控制
     │   ├── admin-guard.ts   # 管理员权限守卫
     │   └── rate-limiter.ts  # 三级速率限制器
     ├── send.ts              # 消息发送

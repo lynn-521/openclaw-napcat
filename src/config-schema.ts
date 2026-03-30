@@ -48,6 +48,149 @@ export const NapCatChannelConfigSchema = {
         default: [],
         description: "管理员 QQ 号列表（可执行所有操作）",
       },
+      groupEvents: {
+        type: "object",
+        description: "入退群事件钩子配置",
+        properties: {
+          onJoin: {
+            type: "object",
+            properties: {
+              enabled: { type: "boolean", default: false },
+              welcomeMessage: { type: "string" },
+              atNewMember: { type: "boolean", default: true },
+              adminOnly: { type: "boolean", default: false },
+            },
+            additionalProperties: false,
+          },
+          onLeave: {
+            type: "object",
+            properties: {
+              enabled: { type: "boolean", default: false },
+              farewellMessage: { type: "string" },
+            },
+            additionalProperties: false,
+          },
+        },
+        additionalProperties: false,
+      },
+      whitelist: {
+        type: "object",
+        description: "白名单/黑名单访问控制",
+        properties: {
+          enabled: { type: "boolean", default: false },
+          mode: { type: "string", enum: ["allowlist", "blocklist"], default: "blocklist" },
+          allowUsers: {
+            type: "array",
+            items: { type: "string" },
+            default: [],
+            description: "允许的私聊用户 QQ 号",
+          },
+          allowGroups: {
+            type: "array",
+            items: { type: "string" },
+            default: [],
+            description: "允许的群 ID",
+          },
+          blockUsers: {
+            type: "array",
+            items: { type: "string" },
+            default: [],
+            description: "禁止的私聊用户 QQ 号",
+          },
+          blockGroups: {
+            type: "array",
+            items: { type: "string" },
+            default: [],
+            description: "禁止的群 ID",
+          },
+        },
+        additionalProperties: false,
+      },
+      longMessage: {
+        type: "object",
+        description: "长消息处理配置",
+        properties: {
+          threshold: {
+            type: "number",
+            default: 300,
+            description: "触发长消息处理的字符数阈值",
+          },
+          mode: {
+            type: "string",
+            enum: ["normal", "og_image", "forward"],
+            default: "normal",
+            description: "长消息处理模式：normal=分片发送，og_image=渲染图片，forward=合并转发",
+          },
+          normal: {
+            type: "object",
+            description: "normal 模式配置",
+            properties: {
+              flushIntervalMs: {
+                type: "number",
+                default: 1200,
+                description: "每段消息之间的发送间隔（毫秒）",
+              },
+              flushChars: {
+                type: "number",
+                default: 160,
+                description: "每段消息的字符数",
+              },
+            },
+            additionalProperties: false,
+          },
+          ogImage: {
+            type: "object",
+            description: "og_image 模式配置",
+            properties: {
+              renderTheme: {
+                type: "string",
+                default: "default",
+                description: "渲染主题（default/dark）",
+              },
+              fontSize: {
+                type: "number",
+                default: 14,
+                description: "渲染字体大小（px）",
+              },
+            },
+            additionalProperties: false,
+          },
+        },
+        additionalProperties: false,
+      },
+      keywordTriggers: {
+        type: "object",
+        description: "关键字触发引擎",
+        properties: {
+          enabled: { type: "boolean", default: false },
+          mode: {
+            type: "string",
+            enum: ["contains", "exact", "regex", "any"],
+            default: "contains",
+            description: "触发模式：contains=包含匹配，exact=精确匹配，regex=正则匹配，any=所有关键词都包含",
+          },
+          keywords: {
+            type: "array",
+            items: { type: "string" },
+            default: [],
+            description: "触发关键词列表",
+          },
+          requireAt: {
+            type: "boolean",
+            default: false,
+            description: "是否需要 @机器人 才触发",
+          },
+          response: {
+            type: "string",
+            description: "命中关键词后的固定回复（不填则走 AI 处理）",
+          },
+          action: {
+            type: "string",
+            description: "命中后执行的脚本路径（可选）",
+          },
+        },
+        additionalProperties: false,
+      },
     },
     additionalProperties: true,
   },
@@ -103,6 +246,20 @@ export const NapCatChannelConfigSchema = {
     admins: {
       label: "管理员列表",
       help: "管理员 QQ 号列表，可执行所有操作（包括高危操作）",
+    },
+    whitelist: {
+      label: "白名单/黑名单",
+      help: "启用后可精细控制哪些用户和群可以与机器人交互。allowlist=仅允许名单，blocklist=允许所有但排除黑名单",
+      advanced: true,
+    },
+    longMessage: {
+      label: "长消息处理",
+      help: "AI 回复超过阈值字符时自动启用：normal=分片发送，og_image=渲染图片，forward=合并转发",
+    },
+    keywordTriggers: {
+      label: "关键字触发",
+      help: "配置关键字匹配规则，命中后发送固定回复或执行脚本",
+      advanced: true,
     },
   },
 } as const;

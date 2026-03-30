@@ -51,6 +51,7 @@ import type { OneBotMessageEvent, OneBotSegment } from "./types.js";
 import { sendGroupMsg, sendPrivateMsg, textSegment, replySegment, recordSegment, videoSegment, uploadGroupFile, uploadPrivateFile, getMsg } from "./api.js";
 import { getNapCatRuntime, setCurrentSenderContext, clearCurrentSenderContext } from "./runtime.js";
 import { RateLimiter } from "./security/rate-limiter.js";
+import { checkAccess } from "./security/access-control.js";
 import {
   setNapCatWs,
   clearNapCatWs,
@@ -338,6 +339,39 @@ async function processMessage(
   const senderName = event.sender.card || event.sender.nickname;
   const chatId = isGroup ? String(event.group_id) : senderId;
   const selfId = account.selfId || String(event.self_id);
+
+  // Whitelist / blacklist access control check
+  {
+    const access = checkAccess(senderId, isGroup ? chatId : undefined, account.config);
+    if (!access.allowed) {
+      runtime.log?.(`[${account.accountId}] Access denied sender=${senderId}: ${access.reason}`);
+      try {
+        if (isNapCatWsConnected()) {
+          try {
+            if (isGroup) {
+              await wsSendGroupMsg(Number(chatId), [textSegment(access.reason ?? "无权限")]);
+            } else {
+              await wsSendPrivateMsg(Number(senderId), [textSegment(access.reason ?? "无权限")]);
+            }
+            statusSink?.({ lastOutboundAt: Date.now() });
+            return;
+          } catch (wsErr) {
+            runtime.log?.(`[${account.accountId}] WS access-denied reply failed, falling back to HTTP: ${String(wsErr)}`);
+          }
+        }
+        // HTTP fallback
+        if (isGroup) {
+          await sendGroupMsg(account.httpApi, Number(chatId), [textSegment(access.reason ?? "无权限")], account.accessToken);
+        } else {
+          await sendPrivateMsg(account.httpApi, Number(senderId), [textSegment(access.reason ?? "无权限")], account.accessToken);
+        }
+        statusSink?.({ lastOutboundAt: Date.now() });
+      } catch {
+        // Ignore send failures for access-denied notifications
+      }
+      return;
+    }
+  }
 
   // In group chats, require @bot mention
   if (isGroup && !hasBotMention(event.message, selfId)) {

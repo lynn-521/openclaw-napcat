@@ -41,6 +41,17 @@ export type OneBotMetaEvent = {
 /** Any OneBot 11 event. */
 export type OneBotEvent = OneBotMessageEvent | OneBotMetaEvent | Record<string, unknown>;
 
+/** OneBot 11 notice event (group member join/leave). */
+export interface OneBotNoticeEvent {
+  post_type: "notice";
+  notice_type: "group_increase" | "group_decrease";
+  group_id: number;
+  user_id: number;
+  operator_id?: number; // 操作者 QQ 号
+  self_id: number;
+  time: number;
+}
+
 /** OneBot 11 API response via WebSocket. */
 export type OneBotApiResponse<T = unknown> = {
   status: "ok" | "failed";
@@ -99,6 +110,36 @@ export type NapCatAccountConfig = {
   };
   /** Admin QQ numbers who can execute high-risk operations. */
   admins?: Array<string | number>;
+  /** Whitelist / blacklist access control configuration. */
+  whitelist?: {
+    /** Enable whitelist / blacklist access control. */
+    enabled?: boolean;
+    /** Access control mode: allowlist = only permitted, blocklist = allow all but excluded. */
+    mode?: "allowlist" | "blocklist";
+    /** Allowed private chat user QQ numbers. */
+    allowUsers?: Array<string | number>;
+    /** Allowed group IDs. */
+    allowGroups?: Array<string | number>;
+    /** Blocked user QQ numbers. */
+    blockUsers?: Array<string | number>;
+    /** Blocked group IDs. */
+    blockGroups?: Array<string | number>;
+  };
+  /** Keyword trigger engine configuration. */
+  keywordTriggers?: {
+    /** Enable keyword triggers. */
+    enabled?: boolean;
+    /** Matching mode: contains, exact, regex, any. */
+    mode?: "contains" | "exact" | "regex" | "any";
+    /** List of trigger keywords. */
+    keywords?: Array<string>;
+    /** Require @bot mention to trigger. */
+    requireAt?: boolean;
+    /** Fixed response when triggered (omit to fall through to AI). */
+    response?: string;
+    /** Action script path to execute when triggered. */
+    action?: string;
+  };
 };
 
 export type NapCatConfig = {
