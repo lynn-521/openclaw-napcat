@@ -1,5 +1,5 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/core";
-import { emptyPluginConfigSchema } from "openclaw/plugin-sdk/core";
+import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import { emptyPluginConfigSchema } from "openclaw/plugin-sdk";
 import { napCatDock, napCatPlugin } from "./src/channel.js";
 import { setNapCatRuntime } from "./src/runtime.js";
 

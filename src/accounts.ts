@@ -1,10 +1,22 @@
 import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import { normalizeSecretInputString } from "openclaw/plugin-sdk/secret-input";
 import type { NapCatAccountConfig, NapCatConfig, ResolvedNapCatAccount } from "./types.js";
 
+// Inline implementation to avoid SDK version mismatch with normalizeResolvedSecretInputString
+// Handles SecretInput type which can be string, { value: string }, or SecretRef object
+function resolveAccessToken(token: unknown): string {
+  if (token == null) return "";
+  if (typeof token === "string") return token;
+  if (typeof token === "object" && "value" in token) {
+    return String((token as { value: unknown }).value ?? "");
+  }
+  return String(token);
+}
+
 function getNapCatSection(cfg: OpenClawConfig): NapCatConfig | undefined {
-  return (cfg as Record<string, unknown>).channels?.napcat as NapCatConfig | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cfgRecord = cfg as any;
+  return cfgRecord.channels?.napcat as NapCatConfig | undefined;
 }
 
 function mergeNapCatAccountConfig(
@@ -57,7 +69,7 @@ export function resolveNapCatAccount(params: {
   const enabled = baseEnabled && accountEnabled;
 
   const httpApi = (config.httpApi ?? "").trim();
-  const accessToken = normalizeSecretInputString(config.accessToken) ?? "";
+  const accessToken = resolveAccessToken(config.accessToken);
   const selfId = String(config.selfId ?? "").trim();
 
   return {

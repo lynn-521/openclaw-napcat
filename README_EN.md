@@ -6,6 +6,8 @@ OpenClaw extension for QQ messaging via [NapCat](https://github.com/NapNeko/NapC
 
 Let your AI assistant fully control QQ interactions through natural language -- like, poke, mute, kick, query user profiles, manage groups, and more.
 
+> **v1.3.0**: Security hardening (rate limiting / admin levels / audit log), long message strategies (streaming/HTML image/forward), keyword triggers, group event hooks (join/leave automation).
+
 ## Features
 
 - **45 AI Agent Tools** -- AI can execute QQ actions via natural language commands
